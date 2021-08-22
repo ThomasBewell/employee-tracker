@@ -11,3 +11,5 @@ const queries = {
     addRole: fs.readFileSync(path.join(__dirname, '../db/addRole.sql')).toString(),
     updateEmployeeRole: fs.readFileSync(path.join(__dirname, '../db/updateEmployeeRole.sql')).toString(),
 }
+
+module.exports = queries;

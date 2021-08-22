@@ -6,6 +6,7 @@ const actionsList = [
     'Add a department',
     'Add a role',
     'Update an employee\'s role',
+    'Quit'
 ];
 
 module.exports = { actionsList }

@@ -4,9 +4,6 @@ const consoleTable = require('console.table');
 const inquirer = require('inquirer');
 const actionsList = require('./actionsList');
 const util = require('util');
-const { allowedNodeEnvironmentFlags } = require('process');
-const { connect } = require('../config/config');
-const { deepStrictEqual } = require('assert');
 const query = util.promisify(connection.query).bind(connection);
 
 // start app
@@ -68,6 +65,10 @@ const getDepartments = () => {
     return query(queries.viewAllDepartments);
 }
 
+const getManagers = () => {
+    return query(queries.viewAllManagers);
+}
+
 // View data
 const viewAllEmployees = async () => {
     try {
@@ -126,7 +127,7 @@ const addEmployee = async () => {
                         type: "rawlist",
                         choices: function () {
                             const choiceArray = [];
-                            getRoles.forEach((role) => {
+                            roles.forEach((role) => {
                                 const roleObj = {
                                     name: role.title,
                                     value: role.id
@@ -167,6 +168,41 @@ const addEmployee = async () => {
                         (err) => {
                             if (err) throw err;
                             console.log(`${answer.empFirstName} ${answer.empLastName} was added.`);
+                            start();
+                        }
+                    )
+                })
+        }
+        const roles = await getRoles();
+        const managers = await getManagers();
+        await promptUser();
+
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+const addDepartment = async () => {
+    try {
+        const promptUser = () => {
+            return inquirer
+                .prompt([
+                    {
+                        name: "deptName",
+                        type: "input",
+                        message: "Enter a department name."
+                    }
+
+                ])
+                .then((answer) => {
+                    connection.query(
+                        queries.addDepartment,
+                        {
+                            name: answer.deptName
+                        },
+                        (err) => {
+                            if (err) throw err;
+                            console.log(`${answer.deptName} was added.`)
                             start();
                         }
                     )
@@ -232,3 +268,77 @@ const addRole = async () => {
         console.log(err);
     }
 }
+
+// Update data
+const updateEmployeeRole = async () => {
+    try {
+        const promptUser = () => {
+            return inquirer
+                .prompt([
+                    {
+                        name: "empId",
+                        type: "rawlist",
+                        choices: function () {
+                            const choiceArray = [];
+                            emps.forEach((emp) => {
+                                const empObj = {
+                                    name: `${emp.first_name} ${emp.last_name}`,
+                                    value: emp.id
+                                }
+                                choiceArray.push(empObj)
+                            })
+                            return choiceArray;
+                        },
+                        message: "Select a role you want to update."
+                    },
+                    {
+                        name: "empRoleId",
+                        type: "rawlist",
+                        choices: function () {
+                            const choiceArray = [];
+                            roles.forEach((role) => {
+                                const roleObj = {
+                                    name: role.title,
+                                    value: role.id
+                                }
+                                choiceArray.push(roleObj)
+                            })
+                            return choiceArray;
+                        },
+                        message: "Select a new role."
+                    }
+                ])
+                .then((answer) => {
+                    connection.query(
+                        queries.updateEmployeeRole,
+                        [
+                            {
+                                role_id: answer.empRoleId
+                            },
+                            {
+                                id: answer.empId
+                            }
+                        ],
+                        (err) => {
+                            if (err) throw err;
+                            console.log("The role was updated.");
+                            start();
+                        }
+                    )
+                })
+        }
+        const emps = await getEmployees();
+        const roles = await getRoles();
+        await promptUser();
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+// Quit the app
+const quitApp = () => {
+    console.log("Goodbye!");
+    return connection.end();
+}
+
+module.exports = { start }
